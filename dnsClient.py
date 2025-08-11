@@ -81,8 +81,8 @@ def dns_query(type, name, server):
     # 2. nyu (length of 3)
     # 3. edu (length of 3)
 
-    qname_parts = name.split('.')  # How can we easily split the string?
-    qname_encoded_parts = [struct.pack('B', len(part)) + part.encode('ascii') for part in
+    qname_parts = name.split('????')  # How can we easily split the string?
+    qname_encoded_parts = [struct.pack('B', len(part)) + part.encode('????') for part in
                            qname_parts]  # Make sure it's encoded as a sequence of the right character encoding type (lowercase)
     qname_encoded = b''.join(
         qname_encoded_parts) + b'\x00'  # enter the closing byte value to signify the end of the domain string (two digits)
@@ -113,7 +113,7 @@ def dns_query(type, name, server):
     # It is a good idea to choose a buffer size that is large enough to accommodate the largest expected DNS response, but not so large that it wastes memory.
 
     # Parse the response header
-    response_header = data[:4096]  # What is the size of the DNS response header in bytes?
+    response_header = data[:12]  # What is the size of the DNS response header in bytes?
     ID, FLAGS, QDCOUNT, ANCOUNT, NSCOUNT, ARCOUNT = struct.unpack('!HHHHHH',
                                                                   response_header)  # We are unpacking the binary data of the response header into individual values representing the fields of the DNS header.
 
@@ -147,7 +147,8 @@ def dns_query(type, name, server):
         name = '.'.join(name_parts)
 
         # Parse the type, class, TTL, and RDLENGTH
-        type, cls, ttl, rdlength = struct.unpack('!HHIH', response_answer[offset:offset +10])  # What is the offset value in bytes? Remember 'H' represent 2 bytes, and 'I' represents 4 bytes, we declared '!HHIH'.
+        type, cls, ttl, rdlength = struct.unpack('!HHIH', response_answer[
+                                                          offset:offset +10])  # What is the offset value in bytes? Remember 'H' represent 2 bytes, and 'I' represents 4 bytes, we declared '!HHIH'.
 
         offset += 10  # Same value as just calculated
 
@@ -155,16 +156,16 @@ def dns_query(type, name, server):
         rdata = response_answer[offset:offset + rdlength]
         offset += rdlength
 
-        if type == 1:  # A
+        if type == 1:  # Lookup Type value
+            # A record (IPv4 address)
             ipv4 = socket.inet_ntop(socket.AF_INET, rdata)
             print(f'{name} has IPv4 address {ipv4}')
             return ipv4
-        elif type == 28:  # AAAA
+        elif type == 28:  # Lookup Type value
+            # AAAA record (IPv6 address)
             ipv6 = socket.inet_ntop(socket.AF_INET6, rdata)
             print(f'{name} has IPv6 address {ipv6}')
             return ipv6
-        return None
-    return None
 
 
 def parse_name(data, offset):
